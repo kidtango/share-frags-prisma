@@ -1,0 +1,106 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String              @id
+  email     String?             @unique
+  username  String?
+  firstName String?
+  lastName  String?
+  avatar    String?
+  title     String?
+  address   Address?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime?
+  shop      Shop?
+  review    ShopReview[]
+  shopLikes ShopLike[]
+  wishlist  LivestockWishlist[]
+}
+
+model Livestock {
+  id                Int                 @id @default(autoincrement())
+  name              String
+  images            Image[]
+  price             Float
+  discountedPrice   Float               @default(0.0)
+  quantity          Int                 @default(0)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  shop              Shop?               @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopId            Int?
+  LivestockWishlist LivestockWishlist[]
+}
+
+model LivestockWishlist {
+  owner       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  livestock   Livestock @relation(fields: [livestockId], references: [id], onDelete: Cascade)
+  livestockId Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+
+  @@id([livestockId, userId])
+}
+
+model Address {
+  id        Int      @id @default(autoincrement())
+  street    String
+  city      String
+  state     String
+  zip       Int
+  isPrimary Boolean
+  owner     User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  shop      Shop?
+}
+
+model Image {
+  id          Int        @id @default(autoincrement())
+  url         String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime
+  Livestock   Livestock? @relation(fields: [livestockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  livestockId Int?
+}
+
+model ShopReview {
+  text     String
+  rating   Float
+  reviewer User   @relation(fields: [userId], references: [id])
+  shop     Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopId   Int
+  userId   String
+
+  @@id([shopId, userId])
+}
+
+model ShopLike {
+  liker  User   @relation(fields: [userId], references: [id])
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  userId String
+  shopId Int
+
+  @@id([userId, shopId])
+}
+
+model Shop {
+  id               Int          @id @default(autoincrement())
+  owner            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String       @unique
+  name             String
+  rating           Float        @default(0.0)
+  livestockForSale Livestock[]
+  locationsAt      Address?     @relation(fields: [addressId], references: [id], onDelete: Cascade)
+  addressId        Int          @unique
+  reviews          ShopReview[]
+  shopLikes        ShopLike[]
+}
